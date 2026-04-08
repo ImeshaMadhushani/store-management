@@ -52,3 +52,18 @@ exports.getMonthlyStock = (req, res) => {
     );
 };
 
+exports.getYearlyStock = (req, res) => {
+    db.query(
+        `SELECT 
+            year,
+            i.name,
+            SUM(si.quantity) AS total_added
+        FROM stock_in si
+        JOIN items i ON si.item_id = i.id
+        GROUP BY year, i.id`,
+        (err, result) => {
+            if (err) return res.status(500).send(err);
+            res.json(result);
+        }
+    );
+};

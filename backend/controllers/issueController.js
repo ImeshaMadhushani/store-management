@@ -24,3 +24,36 @@ exports.getIssues = (req, res) => {
         }
     );
 };
+
+exports.getMonthlyIssues = (req, res) => {
+    db.query(
+        `SELECT 
+            month,
+            year,
+            i.name,
+            SUM(so.quantity) AS total_issued
+        FROM stock_out so
+        JOIN items i ON so.item_id = i.id
+        GROUP BY month, year, i.id`,
+        (err, result) => {
+            if (err) return res.status(500).send(err);
+            res.json(result);
+        }
+    );
+};
+
+exports.getYearlyIssues = (req, res) => {
+    db.query(
+        `SELECT 
+            year,
+            i.name,
+            SUM(so.quantity) AS total_issued
+        FROM stock_out so
+        JOIN items i ON so.item_id = i.id
+        GROUP BY year, i.id`,
+        (err, result) => {
+            if (err) return res.status(500).send(err);
+            res.json(result);
+        }
+    );
+};

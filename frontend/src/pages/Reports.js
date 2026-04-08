@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { API } from "../api/api";
 
 export default function Reports() {
     const [report, setReport] = useState([]);
     const [monthly, setMonthly] = useState([]);
+    const [issues, setIssues] = useState([]);
+    const [yearlyStock, setYearlyStock] = useState([]);
+    const [yearlyIssues, setYearlyIssues] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -12,11 +17,17 @@ export default function Reports() {
 
     const fetchReports = async () => {
         try {
-            const res1 = await axios.get("http://localhost:5000/api/reports");
-            const res2 = await axios.get("http://localhost:5000/api/reports/monthly");
+            const res1 = await API.get("/stock/report");
+            const res2 = await API.get("/stock/monthly");
+            const res3 = await API.get("/issues/monthly");
+            const res4 = await API.get("/stock/yearly");
+            const res5 = await API.get("/issues/yearly");
 
             setReport(res1.data);
             setMonthly(res2.data);
+            setIssues(res3.data);
+            setYearlyStock(res4.data);
+            setYearlyIssues(res5.data);
         } catch (err) {
             console.error(err);
         } finally {
@@ -25,82 +36,130 @@ export default function Reports() {
     };
 
     if (loading) {
-        return <p className="p-4">Loading reports...</p>;
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <p className="text-gray-500 text-lg">Loading dashboard...</p>
+            </div>
+        );
     }
 
-    // KPI Calculations
     const totalIn = report.reduce((sum, item) => sum + item.total_in, 0);
     const totalOut = report.reduce((sum, item) => sum + item.total_out, 0);
     const balance = totalIn - totalOut;
 
     return (
-        <div className="p-4 md:p-6">
-            <h1 className="text-2xl font-bold mb-4">Reports Dashboard</h1>
+        <div className="min-h-screen bg-gray-100 p-6">
+            <h1 className="text-3xl font-bold mb-6 text-gray-800">📊 Reports Dashboard</h1>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-green-500 text-white p-4 rounded shadow">
-                    <h2>Total Stock In</h2>
-                    <p className="text-xl font-bold">{totalIn}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-2xl shadow-lg">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-sm opacity-80">Total Stock In</h2>
+                        <TrendingUp />
+                    </div>
+                    <p className="text-3xl font-bold mt-2">{totalIn}</p>
                 </div>
 
-                <div className="bg-red-500 text-white p-4 rounded shadow">
-                    <h2>Total Stock Out</h2>
-                    <p className="text-xl font-bold">{totalOut}</p>
+                <div className="bg-gradient-to-r from-red-500 to-pink-600 text-white p-6 rounded-2xl shadow-lg">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-sm opacity-80">Total Stock Out</h2>
+                        <TrendingDown />
+                    </div>
+                    <p className="text-3xl font-bold mt-2">{totalOut}</p>
                 </div>
 
-                <div className="bg-blue-500 text-white p-4 rounded shadow">
-                    <h2>Balance</h2>
-                    <p className="text-xl font-bold">{balance}</p>
+                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 rounded-2xl shadow-lg">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-sm opacity-80">Balance</h2>
+                        <Wallet />
+                    </div>
+                    <p className="text-3xl font-bold mt-2">{balance}</p>
                 </div>
             </div>
 
-            {/* Main Report Table */}
-            <div className="bg-white shadow rounded overflow-x-auto mb-6">
-                <h2 className="p-4 font-semibold">Stock Summary</h2>
-                <table className="w-full text-left">
-                    <thead className="bg-gray-200">
-                        <tr>
-                            <th className="p-2">Item</th>
-                            <th className="p-2">Stock In</th>
-                            <th className="p-2">Stock Out</th>
-                            <th className="p-2">Balance</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {report.map((item) => (
-                            <tr key={item.id} className="border-t">
-                                <td className="p-2">{item.name}</td>
-                                <td className="p-2 text-green-600">{item.total_in}</td>
-                                <td className="p-2 text-red-600">{item.total_out}</td>
-                                <td className="p-2 font-bold">{item.balance}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            {/* Chart */}
+            <div className="bg-white shadow-lg rounded-2xl p-6 mb-12">
+                <h2 className="text-lg font-semibold mb-4">Monthly Stock Overview</h2>
+                <ResponsiveContainer width="100%" height={340}>
+                    <BarChart data={monthly}
+                        margin={{ top: 20, right: 20, left: 0, bottom: 30 }}>
+                        <XAxis dataKey="month" tickMargin={10} />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="total_added" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                </ResponsiveContainer>
             </div>
 
-            {/* Monthly Report */}
-            <div className="bg-white shadow rounded overflow-x-auto">
-                <h2 className="p-4 font-semibold">Monthly Stock Added</h2>
+            {/* Table Component */}
+            {/* {renderTable("Stock Summary", report, [
+                "name",
+                "total_in",
+                "total_out",
+                "balance",
+            ])} */}
+
+            {renderTable("Monthly Stock Added", monthly, [
+                "month",
+                "year",
+                "name",
+                "total_added",
+            ])}
+
+            {renderTable("Monthly Issued Stock", issues, [
+                "month",
+                "year",
+                "name",
+                "total_issued",
+            ])}
+
+            {renderTable("Yearly Stock Added", yearlyStock, [
+                "year",
+                "name",
+                "total_added",
+            ])}
+
+            {renderTable("Yearly Issued Stock", yearlyIssues, [
+                "year",
+                "name",
+                "total_issued",
+            ])}
+        </div>
+    );
+}
+
+function renderTable(title, data, columns) {
+    return (
+        <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100 mb-8">
+            <h2 className="p-4 text-lg font-semibold">{title}</h2>
+            <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                    <thead className="bg-gray-200">
+                    <thead className="bg-gray-100 text-gray-600 text-sm uppercase">
                         <tr>
-                            <th className="p-2">Month</th>
-                            <th className="p-2">Year</th>
-                            <th className="p-2">Item</th>
-                            <th className="p-2">Quantity</th>
+                            {columns.map((col, i) => (
+                                <th key={i} className="p-3">{col}</th>
+                            ))}
                         </tr>
                     </thead>
                     <tbody>
-                        {monthly.map((item, index) => (
-                            <tr key={index} className="border-t">
-                                <td className="p-2">{item.month}</td>
-                                <td className="p-2">{item.year}</td>
-                                <td className="p-2">{item.name}</td>
-                                <td className="p-2 text-blue-600">{item.total_added}</td>
+                        {data.length > 0 ? (
+                            data.map((row, i) => (
+                                <tr key={i} className="border-t hover:bg-gray-50 transition">
+                                    {columns.map((col, j) => (
+                                        <td key={j} className="p-3">
+                                            {row[col]}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={columns.length} className="text-center p-4 text-gray-500">
+                                    No data available
+                                </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>

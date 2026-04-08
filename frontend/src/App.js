@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-import Navbar from "./components/Navbar";
+import Layout from "./components/Layout"; // ✅ ADD THIS
+
 import Dashboard from "./pages/Dashboard";
 import Items from "./pages/Items";
 import Reports from "./pages/Reports";
@@ -10,9 +11,7 @@ import Stock from "./pages/Stock";
 function App() {
   return (
     <Router>
-      <Navbar />
-
-      <div className="p-4">
+      <Layout> {/* ✅ WRAP EVERYTHING */}
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/items" element={<Items />} />
@@ -20,7 +19,7 @@ function App() {
           <Route path="/issue" element={<IssuePage />} />
           <Route path="/stock" element={<Stock />} />
         </Routes>
-      </div>
+      </Layout>
     </Router>
   );
 }

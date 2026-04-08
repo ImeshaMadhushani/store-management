@@ -36,7 +36,7 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Bottom Navbar */}
-            <div className="fixed bottom-0 left-0 w-full bg-gray-900 text-white flex justify-around items-center p-2 md:hidden shadow-lg">
+            <div className="fixed bottom-0 left-0 w-full h-20 bg-gray-900 text-white flex justify-around items-center md:hidden shadow-lg z-50">
                 {navItems.map((item) => (
                     <Link
                         key={item.path}
