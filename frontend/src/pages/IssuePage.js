@@ -1,48 +1,163 @@
 import { useEffect, useState } from "react";
 import IssueForm from "../components/IssueForm";
 import { API } from "../api/api";
+import { FileMinus, RefreshCw } from "lucide-react";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function IssuePage() {
     const [issues, setIssues] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+    const [branchFilter, setBranchFilter] = useState("all");
 
     const loadIssues = async () => {
-        const res = await API.get("/issues");
-        setIssues(res.data);
+        try {
+            setLoading(true);
+            const res = await API.get("/issues");
+            setIssues(res.data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
         loadIssues();
     }, []);
 
+    // 🔍 Filter + Search
+    const filteredIssues = issues.filter((i) => {
+        const matchesSearch = i.item_name.toLowerCase().includes(search.toLowerCase());
+        const matchesBranch = branchFilter === "all" || i.branch === branchFilter;
+        return matchesSearch && matchesBranch;
+    });
+
+    // 📥 Export Excel
+    const exportExcel = () => {
+        const ws = XLSX.utils.json_to_sheet(filteredIssues);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Issues");
+        XLSX.writeFile(wb, "Issue_Report.xlsx");
+    };
+
+    // 📄 Export PDF
+    const exportPDF = () => {
+        const doc = new jsPDF();
+        doc.text("Issue Report", 14, 10);
+
+        const tableData = filteredIssues.map((i) => [
+            i.item_name,
+            i.quantity,
+            i.branch,
+            i.month,
+            i.year
+        ]);
+
+        autoTable(doc, {
+            head: [["Item", "Qty", "Branch", "Month", "Year"]],
+            body: tableData,
+            startY: 20
+        });
+
+        doc.save("Issue_Report.pdf");
+    };
+
     return (
-        <div>
-            <h1 className="text-xl font-bold">Issue Items (Branch Wise)</h1>
+        <div className="min-h-screen bg-gray-50 p-6">
 
-            <IssueForm />
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        <FileMinus size={22} /> Issue Management
+                    </h1>
+                    <p className="text-gray-500 text-sm">
+                        Manage issued items by branch/division
+                    </p>
+                </div>
 
-            <table className="w-full mt-4 border">
-                <thead>
-                    <tr className="bg-gray-200">
-                        <th>Item</th>
-                        <th>Qty</th>
-                        <th>Branch</th>
-                        <th>Month</th>
-                        <th>Year</th>
-                    </tr>
-                </thead>
+                <div className="flex gap-2 flex-wrap">
+                    <button onClick={loadIssues} className="bg-gray-800 text-white px-4 py-2 rounded-lg">
+                        <RefreshCw size={16} /> Refresh
+                    </button>
+                    <button onClick={exportExcel} className="bg-green-600 text-white px-4 py-2 rounded-lg">
+                        Excel
+                    </button>
+                    <button onClick={exportPDF} className="bg-red-600 text-white px-4 py-2 rounded-lg">
+                        PDF
+                    </button>
+                </div>
+            </div>
 
-                <tbody>
-                    {issues.map((i) => (
-                        <tr key={i.id} className="text-center border">
-                            <td>{i.item_name}</td>
-                            <td>{i.quantity}</td>
-                            <td>{i.branch}</td>
-                            <td>{i.month}</td>
-                            <td>{i.year}</td>
-                        </tr>
+            {/* Filters */}
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <input
+                    type="text"
+                    placeholder="Search item..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="border px-3 py-2 rounded-lg w-full md:w-1/3"
+                />
+
+                <select
+                    value={branchFilter}
+                    onChange={(e) => setBranchFilter(e.target.value)}
+                    className="border px-3 py-2 rounded-lg"
+                >
+                    <option value="all">All Branches</option>
+                    {[...new Set(issues.map(i => i.branch))].map(b => (
+                        <option key={b} value={b}>{b}</option>
                     ))}
-                </tbody>
-            </table>
+                </select>
+            </div>
+
+            {/* Form */}
+            <div className="mb-8">
+                <IssueForm />
+            </div>
+
+            {/* Table */}
+            <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                <div className="p-4 border-b flex justify-between">
+                    <h2 className="font-semibold">Issued Items</h2>
+                    <span>Total: {filteredIssues.length}</span>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead className="bg-gray-100">
+                            <tr>
+                                <th className="p-3 text-left">Item</th>
+                                <th className="p-3 text-left">Quantity</th>
+                                <th className="p-3 text-left">Branch</th>
+                                <th className="p-3 text-left">Month</th>
+                                <th className="p-3 text-left">Year</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {loading ? (
+                                <tr><td colSpan="5" className="text-center p-6">Loading...</td></tr>
+                            ) : filteredIssues.length > 0 ? (
+                                filteredIssues.map((i) => (
+                                    <tr key={i.id} className="border-t hover:bg-gray-50">
+                                        <td className="p-3 font-medium">{i.item_name}</td>
+                                        <td className="p-3 text-red-600 font-semibold">{i.quantity}</td>
+                                        <td className="p-3">{i.branch}</td>
+                                        <td className="p-3">{i.month}</td>
+                                        <td className="p-3">{i.year}</td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr><td colSpan="5" className="text-center p-6">No data found</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 }

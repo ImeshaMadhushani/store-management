@@ -17,7 +17,7 @@ export default function Navbar() {
     return (
         <>
             {/* Desktop Navbar */}
-            <div className="hidden md:flex bg-gray-900 text-white p-4 justify-between items-center shadow-lg">
+            {/* <div className="hidden md:flex bg-gray-900 text-white p-4 justify-between items-center shadow-lg">
                 <h1 className="text-xl font-bold">Admin Panel</h1>
 
                 <div className="flex gap-6">
@@ -29,6 +29,27 @@ export default function Navbar() {
                                 }`}
                         >
                             {item.icon}
+                            {item.label}
+                        </Link>
+                    ))}
+                </div>
+            </div> */}
+
+            {/* Desktop Sidebar */}
+            <div className="hidden md:flex flex-col fixed top-0 left-0 h-screen w-64 bg-gray-900 text-white p-5 shadow-lg">
+                <h1 className="text-2xl font-bold mb-10">Admin Panel</h1>
+
+                <div className="flex flex-col gap-6">
+                    {navItems.map((item) => (
+                        <Link
+                            key={item.path}
+                            to={item.path}
+                            className={`flex items-center gap-3 p-2 rounded-md hover:bg-gray-800 transition ${location.pathname === item.path
+                                    ? "bg-gray-800 text-blue-400 font-semibold"
+                                    : ""
+                                }`}
+                        >
+                            <span className="text-lg">{item.icon}</span>
                             {item.label}
                         </Link>
                     ))}
