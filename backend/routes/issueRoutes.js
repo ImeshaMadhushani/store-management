@@ -11,7 +11,7 @@ router.get("/monthly", getMonthlyIssues);
 
 router.get("/yearly", getYearlyIssues);
 
-router.put("/issue/:id", updateIssue);
-router.delete("/issue/:id", deleteIssue);
+router.put("/:id", updateIssue);
+router.delete("/:id", deleteIssue);
 
 module.exports = router;

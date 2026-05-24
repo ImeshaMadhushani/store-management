@@ -34,7 +34,7 @@ exports.addStock = (req, res) => {
         }
     );
 }; 
-exports.updateStock = (req, res) => {
+/* exports.updateStock = (req, res) => {
     const { id } = req.params;
     const { item_id, quantity, month, year } = req.body;
 
@@ -59,9 +59,54 @@ exports.updateStock = (req, res) => {
             res.send("Stock Updated Successfully");
         }
     );
+}; */
+
+// UPDATE STOCK
+exports.updateStock = (req, res) => {
+
+    const { id } = req.params;
+
+    const { item_id, quantity, month, year } = req.body;
+
+    if (!item_id || !quantity) {
+        return res.status(400).json({
+            message: "Item and quantity required"
+        });
+    }
+
+    if (quantity <= 0) {
+        return res.status(400).json({
+            message: "Quantity must be greater than 0"
+        });
+    }
+
+    db.query(
+        `UPDATE stock_in 
+        SET item_id=?, quantity=?, month=?, year=? 
+        WHERE id=?`,
+        [item_id, quantity, month, year, id],
+        (err, result) => {
+
+            if (err) {
+                console.log(err);
+                return res.status(500).json(err);
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    message: "Stock not found"
+                });
+            }
+
+            res.json({
+                message: "Stock Updated Successfully"
+            });
+        }
+    );
 };
 
-exports.deleteStock = (req, res) => {
+
+/* exports.deleteStock = (req, res) => {
     const { id } = req.params;
 
     db.query(
@@ -77,7 +122,36 @@ exports.deleteStock = (req, res) => {
             res.send("Stock Deleted Successfully");
         }
     );
+}; */
+
+// DELETE STOCK
+exports.deleteStock = (req, res) => {
+
+    const { id } = req.params;
+
+    db.query(
+        `DELETE FROM stock_in WHERE id=?`,
+        [id],
+        (err, result) => {
+
+            if (err) {
+                console.log(err);
+                return res.status(500).json(err);
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    message: "Stock not found"
+                });
+            }
+
+            res.json({
+                message: "Stock Deleted Successfully"
+            });
+        }
+    );
 };
+
 exports.getReport = (req, res) => {
     db.query(
         `SELECT
@@ -101,18 +175,46 @@ FROM items i;`,
     );
 };
 
-exports.getMonthlyStock = (req, res) => {
+/* exports.getMonthlyStock = (req, res) => {
     db.query(
         `SELECT 
       month,
       year,
       i.name,
-      SUM(si.quantity) AS total_added
+      SUM(si.quantity) AS total_added,
+       created_at,
+    updated_at
     FROM stock_in si
     JOIN items i ON si.item_id = i.id
-    GROUP BY month, year, i.id`,
+    ORDER BY si.created_at DESC`,
         (err, result) => {
             if (err) return res.status(500).send(err);
+            res.json(result);
+        }
+    );
+}; */
+
+exports.getMonthlyStock = (req, res) => {
+    db.query(
+        `SELECT 
+            si.id,
+            si.item_id,
+            si.month,
+            si.year,
+            i.name,
+            si.quantity AS total_added,
+            si.created_at,
+            si.updated_at
+        FROM stock_in si
+        JOIN items i ON si.item_id = i.id
+        ORDER BY si.created_at DESC`,
+        (err, result) => {
+
+            if (err) {
+                console.log(err);
+                return res.status(500).send(err);
+            }
+
             res.json(result);
         }
     );

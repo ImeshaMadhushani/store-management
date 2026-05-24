@@ -88,20 +88,66 @@ exports.updateItem = (req, res) => {
     );
 };
 
+/* exports.deleteItem = (req, res) => {
+    const { id } = req.params;
+
+    console.log("Deleting item ID:", id);
+
+    db.query(
+        "DELETE FROM items WHERE id = ?",
+        [id],
+        (err, result) => {
+
+            if (err) {
+                console.error("Delete Error:", err);
+
+                return res.status(500).json({
+                    message: "Database delete failed",
+                    error: err.message
+                });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    message: "Item not found"
+                });
+            }
+
+            res.json({
+                message: "Item Deleted Successfully"
+            });
+        }
+    );
+}; */
+
 exports.deleteItem = (req, res) => {
     const { id } = req.params;
 
+    // Delete stock_in records first
     db.query(
-        "DELETE FROM items WHERE id=?",
+        "DELETE FROM stock_in WHERE item_id = ?",
         [id],
-        (err, result) => {
-            if (err) return res.status(500).send(err);
+        (err) => {
 
-            if (result.affectedRows === 0) {
-                return res.status(404).send("Item not found");
+            if (err) {
+                return res.status(500).json(err);
             }
 
-            res.send("Item Deleted Successfully");
+            // Then delete item
+            db.query(
+                "DELETE FROM items WHERE id = ?",
+                [id],
+                (err2, result) => {
+
+                    if (err2) {
+                        return res.status(500).json(err2);
+                    }
+
+                    res.json({
+                        message: "Item and related stock deleted"
+                    });
+                }
+            );
         }
     );
 };

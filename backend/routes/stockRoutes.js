@@ -8,7 +8,7 @@ router.get("/report", getReport);
 router.get("/monthly", getMonthlyStock);
 router.get("/yearly", getYearlyStock);
 
-router.put("/stock/:id", updateStock);
-router.delete("/stock/:id", deleteStock);
+router.put("/:id", updateStock);
+router.delete("/:id", deleteStock);
 
 module.exports = router;
